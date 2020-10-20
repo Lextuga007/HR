@@ -1,0 +1,173 @@
+---
+title: "Staff Survey Correlations"
+author: "Zoë Turner"
+date: "20 October 2020"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+```
+
+## Methods
+
+For the the 2016 internal Staff Survey four of the standard ONS Personal Well-Being questions were included from the Office of National Statistics [(ONS)](https://www.ons.gov.uk/peoplepopulationandcommunity/wellbeing/methodologies/surveysusingthe4officefornationalstatisticspersonalwellbeingquestions) were included. Each being scored 0 to 10 (higher scores being better for all questions except anxiety where low scores are better).
+
+
+The four questions are:   | 
+------------- | -------------
+Overall, how satisfied are you with your life nowadays? | referred to in the analysis as *'Satisfied'* 
+Overall, to what extent do you feel that the things you do in your life are worthwhile? |  referred to in the analysis as *'Worthwhile'*
+Overall, how happy did you feel yesterday? | referred to in the analysis as *'Happy'*
+Overall, how anxious did you feel yesterday? |  referred to in the analysis as *'Anxious'* 
+
+For this analysis, a mean average was calculated for each of the four questions depending on the Age Band or the Directorate recorded in the survey. These two categories were selected as they gave the greatest number of data matches to the HR data held for Appraisals, Turnover and Sickness which were selected as HR proxy measures for workforce satisfaction.
+
+Data points for all categories are fewer than 20 points with Directorate having the most points plotted at 11.
+
+Correlation Coefficient (cor listed as the last figure in the text under "Pearson's product-moment correlation"). Any correlation <.3 is considered a very weak relationship but for the purposes of this report is listed as no relationship because of the sample size and the large confidence levels.
+
+**********
+
+## Summary
+
+Correlation  | Statistical Significance
+------------- | -------------
+A moderate to strong relationship between percentage reporting **Satisfied** and **Turnover** by Age Band  (r=-.62)|  No statistical significance 
+A moderate to strong relationship between percentage reporting **Worthwhile** and **Turnover** by Age Band (r=-.64)|   No statistical significance
+
+Nevertheless, these become weak if the age band 70-74 is removed (r=-.21 and r=-.28 respectively). 
+
+
+**********
+
+
+There continues to be a strong relationship between reporting **Anxious** and **Turnover** whether the age band 70-79 is included or not.
+
+Correlation  | Statistical Significance
+------------- | -------------
+A strong relationship between percentage reporting **Anxious** and **Turnover** by Age Band (r=.72)| No statistical significance
+A strong relationship between percentage reporting **Anxious** and **Turnover** by Age Band (70-79 removed) (r=.78) | No statistical significance
+
+There is no statistical significance, however, as the points plotted are very few (only 5 without the 70-79 Age Band).
+
+*The ages 30-49 are the least anxious and have the lowest Turnover.*
+
+
+**********
+
+
+
+There is a strong relationship between reporting **Satisfied** or **Worthwhile** and percentage of **Sickness** by Directorate. These are both statistically significant at p < 0.05. Consequently, as sickness increases the reporting of feeling Satisfied or Worthwhile decreases.
+
+Correlation  | Statistical Significance
+------------- | -------------
+A strong relationship between percentage reporting **Satisfied** and **Sickness** by Directorate (r=-.67)| This is statistically significant at p < 0.05
+A strong relationship between percentage recording **Worthwhile** and **Sickness** by Directorate (r=-.69)| This is statistically significant at p < 0.05
+
+**********
+
+## Conclusion
+
+
+**Appraisal** rates do not correlate with any of the ONS questions relating to wellbeing.
+
+How **happy** a person reports to be does not correlate with any of the HR proxy measures of workforce satisfaction.
+
+There is a strong relationship between reporting feeling **Anxious** and **Age Band**, but this is not replicated by Directorate.
+
+The HR proxy measures of Turnover and Sickness could be used as an ongoing measure of staff wellbeing, which is only recorded on a yearly basis, due to the strong correlations to reporting feeling **Satisified or Worthwhile** for Directorates and, to a less extent, by Age Band.
+
+ 
+```{r}
+
+library(dplyr)
+library(reshape2)
+library(plotly)
+library(tidyverse)
+
+```
+**********
+
+## Altered to make available publicly
+
+All findings above are correlations based on the real data. The following section is an example of the code which uses synthetic data. 
+
+```{r data}
+
+# created using syntheticScript.R
+load("data/syntheticSurvey.RData")
+
+theData <- synthSurvey
+
+ESRAge <- synthESR %>% 
+  filter(Category == 'Age')
+
+```
+
+# Example code
+
+Find the mean, attach to the ESR data aggregate data and then apply the statistical test
+
+```{r Mean Age}
+
+# Mean
+AgeMeanSatisfied <- aggregate(theData$Satisfied, 
+                              by = list(theData$`Recoded Age`), 
+                              FUN = mean, na.rm = TRUE)
+
+AgeMeanHappy <- aggregate(theData$Happy, 
+                              by = list(theData$`Recoded Age`), 
+                              FUN = mean, na.rm = TRUE)
+
+AgeMeanWorthwhile <- aggregate(theData$Worthwhile,
+                              by=list(theData$`Recoded Age`),
+                              FUN=mean, na.rm=TRUE)
+
+AgeMeanAnxious <- aggregate(theData$Anxious,
+                              by=list(theData$`Recoded Age`),
+                              FUN=mean, na.rm=TRUE)
+
+#Rename
+names(AgeMeanSatisfied) = c("Type", "SatisfiedMean")
+names(AgeMeanHappy) = c("Type", "HappyMean")
+names(AgeMeanWorthwhile) = c("Type", "WorthwhileMean")
+names(AgeMeanAnxious) = c("Type", "AnxiousMean")
+
+#Merge
+Age <- ESRAge %>% inner_join(AgeMeanSatisfied)
+Age <- Age %>% inner_join(AgeMeanHappy)
+Age <- Age %>% inner_join(AgeMeanWorthwhile)
+Age <- Age %>% inner_join(AgeMeanAnxious)
+
+```
+
+## Turnover
+
+*Note that this is for synthetic data*
+
+A strong relationship between reporting Satisfied and percentage Turnover by Age Band (r=.89). Statistical significance p < 0.05.
+
+```{r Satisfied - Turnover}
+
+ggplot(Age, aes(x = SatisfiedMean, y = Turnover)) + 
+    geom_text(aes(label = Type), size = 3, colour = "black"
+            , check_overlap = TRUE
+            , hjust = 0, nudge_x = 0.001) + 
+   geom_point(shape = 1) + 
+  geom_smooth(method = "lm")
+
+#pearsons r 
+
+cor.test(Age$SatisfiedMean, Age$Turnover, method=c("pearson"))
+
+
+```
+
+These tests were originally applied for each combination of data available but could be better done using functions. 
